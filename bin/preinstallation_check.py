@@ -103,7 +103,7 @@ def main(args):
     if failing_checks:
         msg = '\nFailed! System pre-check failed %(failing_checks)d checks ' \
               'in %(elapsed_time)s secs' % data
-        if not args.vebose:
+        if not args.verbose:
             msg += " Add -vv to see specific failing checks"
         print(color(msg, 'red'))
         return 255
