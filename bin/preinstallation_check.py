@@ -10,6 +10,7 @@ import time
 import subprocess
 
 
+
 def check_sudo_available():
     """Verify sudo availability"""
     return_code = subprocess.call(['which', 'sudo'], stdout=subprocess.PIPE)
@@ -25,6 +26,15 @@ def check_sudo_access():
         return True, "Passing sudo access"
     elif return_code == 1:
         return False, "Failing passwordless sudo access"
+
+
+def check_nvme_disk():
+    """Verify that we have an NVME disk"""
+    command = ['lsblk', '-d', '-n', '-o', 'name']
+    output = subprocess.getoutput(" ".join(command))
+    if 'nvme' in output:
+        return True, "NVME disk available"
+    return False, "NVME disk NOT available"
 
 
 def package_checks():
@@ -52,20 +62,24 @@ def get_checks(system_type):
     checks = [check_sudo_available]
     if 'vtrq' in system_type:
         checks.append(check_sudo_access)
+        checks.append(check_nvme_disk)
+
 
     return checks
 
 
 def main(args):
+    """Main script to run"""
     start = time.time()
     levels = [logging.WARNING, logging.INFO, logging.DEBUG]
     level = levels[min(len(levels) - 1, args.verbose)]
     logging.basicConfig(
-        level=level, format="%(asctime)s %(levelname)s %(message)s", datefmt='%H:%M:%S')
+        level=level, format="%(asctime)s %(levelname)10s %(message)s", datefmt='%H:%M:%S')
 
     checks = get_checks(args.type)
     logging.info('Starting %d pre-checks', len(checks))
 
+    overall_passing = True
     for check in checks:
         try:
             check_status, message = check()
@@ -73,12 +87,15 @@ def main(args):
             logging.error(color("Unable to run check %r - %r" % (str(check), err), 'red'))
             continue
         if check_status:
-            logging.error(color(message, 'green'))
+            logging.info(color(message, 'green'))
         else:
-            logging.info(color(message, 'red'))
+            logging.error(color(message, 'red'))
 
-    data = dict(elapsed_time=time.time() - start)
-    logging.info('All done! System verified in %(elapsed_time)s', data)
+    data = dict(elapsed_time=round((time.time() - start), 2))
+    if overall_passing:
+        logging.info(color('All passed! System verified in %(elapsed_time)s' % data, 'green'))
+        return
+    logging.error(color('Failed! System pre-chedk failed in %(elapsed_time)s' % data, 'red'))
 
 
 if __name__ == '__main__':
