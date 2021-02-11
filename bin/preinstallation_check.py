@@ -20,7 +20,7 @@ def check_sudo_available():
 
 def check_sudo_access():
     """Verify sudo access"""
-    return_code = subprocess.call(['sudo', '-nv'], stdout=subprocess.PIPE)
+    return_code = subprocess.call(['sudo', '-nv'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if return_code == 0:
         return True, "Passing sudo access"
     elif return_code == 1:
@@ -73,9 +73,9 @@ def main(args):
             logging.error(color("Unable to run check %r - %r" % (str(check), err), 'red'))
             continue
         if check_status:
-            logging.error(color(message, 'red'))
+            logging.error(color(message, 'green'))
         else:
-            logging.info(color(message, 'green'))
+            logging.info(color(message, 'red'))
 
     data = dict(elapsed_time=time.time() - start)
     logging.info('All done! System verified in %(elapsed_time)s', data)
