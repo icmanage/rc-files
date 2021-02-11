@@ -75,7 +75,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Pre-check the system')
     parser.add_argument('-v', '--verbose', action='count', default=0, help='Verbosity')
-    parser.add_argument('-t', '--type', action='store', choices=['vtrq', 'vtrq-vda',],
+    parser.add_argument('-t', '--type', action='store', choices=['vtrq', 'vtrq-vda'],
                         help="System type that needs checking")
 
     sys.exit(main(parser.parse_args()))
