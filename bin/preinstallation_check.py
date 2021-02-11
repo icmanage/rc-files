@@ -22,11 +22,15 @@ def check_sudo_available():
 def check_sudo_access():
     """Verify sudo access"""
     # On aws - sudo -nv returns 0 and has ALL and NOPASSWD in the response if you can
-    return_code = subprocess.call(['sudo', '-nl'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if return_code == 0:
+    command = ['sudo', '-nl']
+    return_code = subprocess.call(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if return_code == 1:
+        return False, "Failing sudo access - You don't appear to have sudo access"
+
+    output = subprocess.check_output(command)
+    if 'ALL' in output and 'NOPASSWD: ALL' in output:
         return True, "Passing sudo access"
-    elif return_code == 1:
-        return False, "Failing passwordless sudo access"
+    return False, "Failing passwordless sudo access"
 
 
 def check_nvme_disk():
