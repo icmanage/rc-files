@@ -15,7 +15,7 @@ def check_sudo_available():
     """Verify sudo availability"""
     return_code = subprocess.call(['which', 'sudo'], stdout=subprocess.PIPE)
     if return_code == 0:
-        return True, "Passing sudo availability"
+        return True, "Passing sudo availability.  Sudo us available"
     return False, "Failing sudo availability.  Install sudo"
 
 
@@ -29,8 +29,8 @@ def check_sudo_access():
 
     output = subprocess.check_output(command)
     if 'ALL' in output and 'NOPASSWD: ALL' in output:
-        return True, "Passing sudo access"
-    return False, "Failing passwordless sudo access"
+        return True, "Passing sudo access.  User has passwordless sudo access"
+    return False, "Failing passwordless sudo access.  You need to ensure you have passwordless sudo"
 
 
 def check_nvme_disk():
@@ -38,8 +38,8 @@ def check_nvme_disk():
     command = ['lsblk', '-d', '-n', '-o', 'name']
     output = subprocess.check_output(command)
     if 'nvme' in output:
-        return True, "NVME disk available"
-    return False, "NVME disk NOT available"
+        return True, "NVME exists.  You have an NVME disk"
+    return False, "NVME disk NOT available.  Wrong hardware we need an NVME disk."
 
 
 def package_checks():
