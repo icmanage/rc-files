@@ -1,4 +1,7 @@
 #!/bin/env python
+
+# curl -sSL --retry 5 https://github.com/icm_manage/rc-files/raw/master/bin/preinstallation_check.py  | sh -s -- -a axis -c production -vvv
+# -s -- -a axis -c production -vvv
 import argparse
 import logging
 import os
@@ -72,7 +75,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Pre-check the system')
     parser.add_argument('-v', '--verbose', action='count', default=0, help='Verbosity')
-    parser.add_argument('-t', '--type', action='store', choies=['vtrq', 'vtrq-vda',],
+    parser.add_argument('-t', '--type', action='store', choices=['vtrq', 'vtrq-vda',],
                         help="System type that needs checking")
 
     sys.exit(main(parser.parse_args()))
