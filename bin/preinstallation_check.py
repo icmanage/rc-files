@@ -31,7 +31,7 @@ def check_sudo_access():
 def check_nvme_disk():
     """Verify that we have an NVME disk"""
     command = ['lsblk', '-d', '-n', '-o', 'name']
-    output = subprocess.getoutput(" ".join(command))
+    output = subprocess.check_output(command)
     if 'nvme' in output:
         return True, "NVME disk available"
     return False, "NVME disk NOT available"
@@ -74,10 +74,10 @@ def main(args):
     levels = [logging.WARNING, logging.INFO, logging.DEBUG]
     level = levels[min(len(levels) - 1, args.verbose)]
     logging.basicConfig(
-        level=level, format="%(asctime)s %(levelname)10s %(message)s", datefmt='%H:%M:%S')
+        level=level, format="%(asctime)s %(levelname)8s %(message)s", datefmt='%H:%M:%S')
 
     checks = get_checks(args.type)
-    logging.info('Starting %d pre-checks', len(checks))
+    logging.info('Starting %d pre-checks on %s', len(checks), args.type)
 
     overall_passing = True
     for check in checks:
@@ -85,17 +85,19 @@ def main(args):
             check_status, message = check()
         except Exception as err:
             logging.error(color("Unable to run check %r - %r" % (str(check), err), 'red'))
+            overall_passing = False
             continue
         if check_status:
             logging.info(color(message, 'green'))
         else:
             logging.error(color(message, 'red'))
+            overall_passing = False
 
     data = dict(elapsed_time=round((time.time() - start), 2))
     if overall_passing:
         logging.info(color('All passed! System verified in %(elapsed_time)s' % data, 'green'))
         return
-    logging.error(color('Failed! System pre-chedk failed in %(elapsed_time)s' % data, 'red'))
+    logging.error(color('Failed! System pre-check failed in %(elapsed_time)s' % data, 'red'))
 
 
 if __name__ == '__main__':
