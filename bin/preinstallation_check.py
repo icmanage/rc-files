@@ -15,8 +15,8 @@ def check_sudo_available():
     """Verify sudo availability"""
     return_code = subprocess.call(['which', 'sudo'], stdout=subprocess.PIPE)
     if return_code == 0:
-        return True, "Passing sudo availability.  Sudo us available"
-    return False, "Failing sudo availability.  Install sudo"
+        return True, "Passing sudo availability.  Sudo is available"
+    return False, "Failing sudo availability.  Install sudo."
 
 
 def check_sudo_access():
@@ -99,16 +99,17 @@ def main(args):
             failing_checks.append(check)
 
     data = dict(elapsed_time=round((time.time() - start), 2), total_checks=len(checks),
-                failing_checks=len(failing_checks))
+                failing_checks=len(failing_checks), type=args.type)
     if failing_checks:
-        msg = '\nFailed! System pre-check failed %(failing_checks)d checks ' \
+        msg = '\nFailed! System pre-check for %(type)s failed %(failing_checks)d checks ' \
               'in %(elapsed_time)s secs' % data
         if not args.verbose:
             msg += " Add -vv to see specific failing checks"
         print(color(msg, 'red'))
         return 255
 
-    msg = '\nAll passed! System verified %(total_checks)d checks in %(elapsed_time)s secs' % data
+    msg = '\nAll passed! System verified %(total_checks)d %(type)s ' \
+          'checks in %(elapsed_time)s secs' % data
     print(color(msg, 'green'))
 
 
