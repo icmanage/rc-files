@@ -21,7 +21,8 @@ def check_sudo_available():
 
 def check_sudo_access():
     """Verify sudo access"""
-    return_code = subprocess.call(['sudo', '-nv'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # On aws - sudo -nv returns 0 and has ALL and NOPASSWD in the response if you can
+    return_code = subprocess.call(['sudo', '-nl'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if return_code == 0:
         return True, "Passing sudo access"
     elif return_code == 1:
@@ -79,25 +80,30 @@ def main(args):
     checks = get_checks(args.type)
     logging.info('Starting %d pre-checks on %s', len(checks), args.type)
 
-    overall_passing = True
+    failing_checks = []
     for check in checks:
         try:
             check_status, message = check()
         except Exception as err:
             logging.error(color("Unable to run check %r - %r" % (str(check), err), 'red'))
-            overall_passing = False
+            failing_checks.append(check)
             continue
         if check_status:
             logging.info(color(message, 'green'))
         else:
             logging.error(color(message, 'red'))
-            overall_passing = False
+            failing_checks.append(check)
 
-    data = dict(elapsed_time=round((time.time() - start), 2))
-    if overall_passing:
-        logging.info(color('All passed! System verified in %(elapsed_time)s' % data, 'green'))
-        return
-    logging.error(color('Failed! System pre-check failed in %(elapsed_time)s' % data, 'red'))
+    data = dict(elapsed_time=round((time.time() - start), 2), total_checks=len(checks),
+                failing_checks=len(failing_checks))
+    if failing_checks:
+        msg = '\nFailed! System pre-check failed %(failing_checks)d checks ' \
+              'in %(elapsed_time)s secs' % data
+        print(color(msg, 'red'))
+        return 255
+
+    msg = '\nAll passed! System verified %(total_checks)d checks in %(elapsed_time)s secs' % data
+    print(color(msg, 'green'))
 
 
 if __name__ == '__main__':
