@@ -1,7 +1,7 @@
 #!/bin/env python
 
-# curl -sSL --retry 5 https://github.com/icm_manage/rc-files/raw/master/bin/preinstallation_check.py  | sh -s -- -a axis -c production -vvv
-# -s -- -a axis -c production -vvv
+# curl -sSL --retry 5 https://github.com/icmanage/rc-files/raw/main/bin/preinstallation_check.py | python - --type vtrq-vda -vv
+
 import argparse
 import logging
 import os
@@ -10,12 +10,21 @@ import time
 import subprocess
 
 
+def check_sudo_available():
+    """Verify sudo availability"""
+    return_code = subprocess.call(['which', 'sudo'], stdout=subprocess.PIPE)
+    if return_code == 0:
+        return True, "Passing sudo availability"
+    return False, "Failing sudo availability.  Install sudo"
+
+
 def check_sudo_access():
     """Verify sudo access"""
-    return_code = subprocess.call(['sudo', '-V'], stdout=subprocess.PIPE)
+    return_code = subprocess.call(['sudo', '-nv'], stdout=subprocess.PIPE)
     if return_code == 0:
         return True, "Passing sudo access"
-    return False, "Failing sudo access"
+    elif return_code == 1:
+        return False, "Failing passwordless sudo access"
 
 
 def package_checks():
@@ -40,7 +49,7 @@ def color(msg, color='default', bold=False):
 
 def get_checks(system_type):
     """Collect the checks needed"""
-    checks = []
+    checks = [check_sudo_available]
     if 'vtrq' in system_type:
         checks.append(check_sudo_access)
 
