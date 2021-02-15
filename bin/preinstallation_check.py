@@ -95,7 +95,7 @@ def check_holodeck_config_exists(args, log=None, **_kwargs):
     if not os.path.exists(args.config):
         return False, "HOLODECK_CONFIGURATION_FILE file %r does not exist" % args.config
     read_config(os.environ.get('HOLODECK_CONFIGURATION_FILE'), log=log)
-    return True, "Holodeck configuration %r exists and can be read" % args.config
+    return True, "Holodeck configuration %r exists and can be read / parsed" % args.config
 
 
 def _test_writeable_directory(variable_name, ):
@@ -106,7 +106,7 @@ def _test_writeable_directory(variable_name, ):
     if return_code == 1:
         return False, "Unable to write to %s as defined in config" % variable_name
     subprocess.call(['rm', test_file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    return True, "%s is writeable" % variable_name
+    return True, "%s as defined in HOLODECK_CONFIGURATION_FILE is writeable" % variable_name
 
 
 def check_writeable_vtrq_backingstore(_args, **_kwargs):
@@ -188,8 +188,8 @@ def main(args):
     data = dict(elapsed_time=round((time.time() - start), 2), total_checks=len(checks),
                 failing_checks=len(failing_checks), type=args.type)
     if failing_checks:
-        msg = '\nFailed! System pre-check for %(type)s failed %(failing_checks)d checks ' \
-              'in %(elapsed_time)s secs' % data
+        msg = '\nFailed! System pre-check for %(type)s failed %(failing_checks)d/' \
+              '%(total_checks)s checks in %(elapsed_time)s secs' % data
         if not args.verbose:
             msg += " Add -vv to see specific failing checks"
         print(color(msg, 'red'))
