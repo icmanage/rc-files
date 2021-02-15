@@ -1,6 +1,6 @@
 #!/bin/env python
 
-# curl -sSL --retry 5 https://github.com/icmanage/rc-files/raw/main/bin/preinstallation_check.py | python - --type vtrq-vda -vv
+# curl -sSL https://github.com/icmanage/rc-files/raw/main/bin/preinstallation_check.py | python - --type vtrq-vda -vv
 
 import argparse
 import logging
@@ -9,6 +9,37 @@ import sys
 import time
 import subprocess
 
+
+def get_os_release():
+    """This will pull the OS Release data for the OS"""
+    if os.path.exists('/etc/os-release'):
+        with open('/etc/os-release') as file_obj:
+            data = file_obj.readlines()
+        results = {}
+        for line in data:
+            _x = line.split("=")
+            key, value = _x[0], "=".join(_x[1:])
+            value = value[1:-1] if value.startswith('"') and value.endswith('"') else value
+            value = value[1:-1] if value.startswith("'") and value.endswith("'") else value
+            results[key] = value
+        return results
+
+
+def check_os_type():
+    """Verify our version"""
+    os_data = get_os_release()
+    if os_data['ID'] == 'amzn':
+        if os_data['VERSION'] != "2":
+            return False, f"Amazon version {os_data['VERSION']} unsupported"
+        return True, f"Amazon version {os_data['VERSION']} supported"
+    if os_data['ID'] == 'rhel':
+        if os_data['VERSION'] not in ["2", "6"]:
+            return False, f"RHEL version {os_data['VERSION']} unsupported"
+        return True, f"RHEL version {os_data['VERSION']} supported"
+    if os_data['ID'] == 'ubuntu':
+        if os_data['VERSION'] != "18":
+            return False, f"Ubuntu version {os_data['VERSION']} unsupported"
+        return True, f"Ubuntu version {os_data['VERSION']} supported"
 
 
 def check_sudo_available():
@@ -64,11 +95,10 @@ def color(msg, color='default', bold=False):
 
 def get_checks(system_type):
     """Collect the checks needed"""
-    checks = [check_sudo_available]
+    checks = [check_os_type, check_sudo_available]
     if 'vtrq' in system_type:
         checks.append(check_sudo_access)
         checks.append(check_nvme_disk)
-
 
     return checks
 
