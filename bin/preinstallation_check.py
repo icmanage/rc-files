@@ -12,35 +12,43 @@ import subprocess
 
 def get_os_release():
     """This will pull the OS Release data for the OS"""
+    results = {}
     if os.path.exists('/etc/os-release'):
         with open('/etc/os-release') as file_obj:
             data = file_obj.readlines()
-        results = {}
         for line in data:
             _x = line.split("=")
             key, value = _x[0], "=".join(_x[1:])
             value = value[1:-1] if value.startswith('"') and value.endswith('"') else value
             value = value[1:-1] if value.startswith("'") and value.endswith("'") else value
             results[key] = value
-        return results
+    return results
 
 
 def check_os_type():
     """Verify our version"""
     os_data = get_os_release()
-    if os_data['ID'] == 'amzn':
+    if os_data.get('ID') == 'amzn':
         if os_data['VERSION'] != "2":
             return False, 'Amazon version %s unsupported' % os_data['VERSION']
         return True, 'Amazon version %s supported' % os_data['VERSION']
-    if os_data['ID'] == 'rhel':
+    elif os_data.get('ID') == 'rhel':
         if os_data['VERSION'] not in ["2", "6"]:
             return False, 'Redhat version %s unsupported' % os_data['VERSION']
         return True, 'Redhat version %s supported' % os_data['VERSION']
-    if os_data['ID'] == 'ubuntu':
+    elif os_data.get('ID') == 'ubuntu':
         if os_data['VERSION'] != "18":
             return False, 'Ubuntu version %s unsupported' % os_data['VERSION']
         return True, 'Ubuntu version %s supported' % os_data['VERSION']
+    elif os_data.get('ID') is None:
+        return False, "Unable to identify ID and or VERSION from /etc/os-release"
 
+
+def check_holodeck_config_exists():
+    """Does the halodeck config file exist"""
+    config = os.environ.get('HOLODECK_CONFIGURATION')
+    if not os.path.exists(config):
+        return False, "Unable to identify HALODECK_CONFIGURATION file"
 
 def check_sudo_available():
     """Verify sudo availability"""
@@ -114,6 +122,8 @@ def main(args):
     checks = get_checks(args.type)
     logging.info('Starting %d pre-checks on %s', len(checks), args.type)
 
+    os.environ['HOLODECK_CONFIGURATION'] = args.config
+
     failing_checks = []
     for check in checks:
         try:
@@ -144,8 +154,13 @@ def main(args):
 
 
 if __name__ == '__main__':
+    _def_conf = os.path.join(os.environ.get('HOME'), "holodeck.cfg")
+    default_config = os.environ.get('HOLODECK_CONFIGURATION', _def_conf)
+
     parser = argparse.ArgumentParser(description='Pre-check the system')
     parser.add_argument('-v', '--verbose', action='count', default=0, help='Verbosity')
+    parser.add_argument('-c', '--config', action='store',
+                        default=default_config, help='Holodeck configuration')
     parser.add_argument('-t', '--type', action='store', choices=['vtrq', 'vtrq-vda'],
                         help="System type that needs checking")
 
