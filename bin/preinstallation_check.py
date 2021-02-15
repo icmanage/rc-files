@@ -21,12 +21,12 @@ def read_config(config_file, separator=' ', log=None):
         if not len(line) or re.search(r'\s*#', line):
             continue
         line = re.sub(r'\s+', ' ', line)
-        _x = line.split()
-        if separator:
-            _x = line.split(separator)
+        if '`hostname -i`' in line:
+            line = re.sub('`hostname -i`', subprocess.check_output(['hostname', '-i']), line)
+        _x = line.split(separator)
         if len(_x) != 2:
             if log:
-                log.warning("Skipping %r in %r" % (line, config_file))
+                log.warning(color("Skipping %r in %r" % (line, config_file), 'yellow'))
             else:
                 print("Skipping %r in %r" % (line, config_file))
             continue
