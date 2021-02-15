@@ -30,16 +30,16 @@ def check_os_type():
     os_data = get_os_release()
     if os_data['ID'] == 'amzn':
         if os_data['VERSION'] != "2":
-            return False, f"Amazon version {os_data['VERSION']} unsupported"
-        return True, f"Amazon version {os_data['VERSION']} supported"
+            return False, f'Amazon version {os_data["VERSION"]} unsupported'
+        return True, f'Amazon version {os_data["VERSION"]} supported'
     if os_data['ID'] == 'rhel':
         if os_data['VERSION'] not in ["2", "6"]:
-            return False, f"RHEL version {os_data['VERSION']} unsupported"
-        return True, f"RHEL version {os_data['VERSION']} supported"
+            return False, f'Redhat version {os_data["VERSION"]} unsupported'
+        return True, f'Redhat version {os_data["VERSION"]} supported'
     if os_data['ID'] == 'ubuntu':
         if os_data['VERSION'] != "18":
-            return False, f"Ubuntu version {os_data['VERSION']} unsupported"
-        return True, f"Ubuntu version {os_data['VERSION']} supported"
+            return False, f'Ubuntu version {os_data["VERSION"]} unsupported'
+        return True, f'Ubuntu version {os_data["VERSION"]} supported'
 
 
 def check_sudo_available():
