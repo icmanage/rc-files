@@ -8,26 +8,22 @@ import os
 import sys
 import time
 import subprocess
+from configparser import ConfigParser, ExtendedInterpolation
 
 
-def get_os_release():
-    """This will pull the OS Release data for the OS"""
-    results = {}
-    if os.path.exists('/etc/os-release'):
-        with open('/etc/os-release') as file_obj:
-            data = file_obj.readlines()
-        for line in data:
-            _x = line.split("=")
-            key, value = _x[0], "=".join(_x[1:])
-            value = value[1:-1] if value.startswith('"') and value.endswith('"') else value
-            value = value[1:-1] if value.startswith("'") and value.endswith("'") else value
-            results[key] = value
-    return results
+def read_config(config_file):
+    with open(config_file, 'r') as f:
+        config_string = '[DEFAULT]\n' + f.read()
+    config = ConfigParser(interpolation=ExtendedInterpolation())
+    config.read_string(config_string)
+    return dict(config['DEFAULT'])
 
 
 def check_os_type():
     """Verify our version"""
-    os_data = get_os_release()
+    os_data = read_config('/etc/os-release')
+    import pprint
+    pprint.pprint(os_data)
     if os_data.get('ID') == 'amzn':
         if os_data['VERSION'] != "2":
             return False, 'Amazon version %s unsupported' % os_data['VERSION']
