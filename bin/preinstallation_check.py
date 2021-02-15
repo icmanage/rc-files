@@ -11,7 +11,7 @@ import time
 import subprocess
 
 
-def read_config(config_file, separator=' ', log=None):
+def read_config(config_file, separator=' ', log=None, report=True):
     results = {}
     with open(config_file) as file_obj:
         data = file_obj.readlines()
@@ -25,10 +25,11 @@ def read_config(config_file, separator=' ', log=None):
             line = re.sub('`hostname -i`', subprocess.check_output(['hostname', '-i']), line)
         _x = line.split(separator)
         if len(_x) != 2:
-            if log:
-                log.warning(color("Skipping %r in %r" % (line, config_file), 'yellow'))
-            else:
-                print("Skipping %r in %r" % (line, config_file))
+            if report:
+                if log:
+                    log.warning(color("Skipping %r in %r" % (line, config_file), 'yellow'))
+                else:
+                    print("Skipping %r in %r" % (line, config_file))
             continue
         key, value = _x
         if value.startswith('"') and value.endswith('"'):
@@ -56,14 +57,6 @@ def check_os_type(_args, log=None, **_kwargs):
         return True, 'Ubuntu version %s supported' % os_data['VERSION']
     elif os_data.get('ID') is None:
         return False, "Unable to identify ID and or VERSION from /etc/os-release"
-
-
-def check_holodeck_config_exists(args, log=None, **_kwargs):
-    """Does the halodeck config file exist"""
-    if not os.path.exists(args.config):
-        return False, "HOLODECK_CONFIGURATION_FILE file %r does not exist" % args.config
-    read_config(os.environ.get('HOLODECK_CONFIGURATION_FILE'), log=log)
-    return True, "Holodeck configuration %r exists and can be read" % args.config
 
 
 def check_sudo_available(*_args, **_kwargs):
@@ -97,12 +90,43 @@ def check_nvme_disk(*_args, **_kwargs):
     return False, "NVME disk NOT available.  Wrong hardware we need an NVME disk."
 
 
-def package_checks(*_args, **_kwargs):
-    """Verify we have the right packages installed"""
-    return_code = subprocess.call(['sudo', '-V'], stdout=subprocess.PIPE)
-    if return_code == 0:
-        return True, "Passing sudo access"
-    return False, "Failing sudo access"
+def check_holodeck_config_exists(args, log=None, **_kwargs):
+    """Does the halodeck config file exist"""
+    if not os.path.exists(args.config):
+        return False, "HOLODECK_CONFIGURATION_FILE file %r does not exist" % args.config
+    read_config(os.environ.get('HOLODECK_CONFIGURATION_FILE'), log=log)
+    return True, "Holodeck configuration %r exists and can be read" % args.config
+
+
+def _test_writeable_directory(variable_name, ):
+    config = read_config(os.environ.get('HOLODECK_CONFIGURATION_FILE'), report=False)
+    test_file = os.path.join(config[variable_name], '.empty_file')
+    return_code = subprocess.call(['touch', test_file], stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE)
+    if return_code == 1:
+        return False, "Unable to write to %s as defined in config" % variable_name
+    subprocess.call(['rm', test_file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return True, "%s is writeable" % variable_name
+
+
+def check_writeable_vtrq_backingstore(_args, **_kwargs):
+    """Does the halodeck config file exist"""
+    return _test_writeable_directory('VTRQ_BACKING_STORE')
+
+
+def check_writeable_vda_backingstore(_args, **_kwargs):
+    """Does the halodeck config file exist"""
+    return _test_writeable_directory('VDA_BACKING_STORE')
+
+
+def check_writeable_install_directory(_args, **_kwargs):
+    """Does the halodeck config file exist"""
+    return _test_writeable_directory('PC_INSTALL_AREA')
+
+
+def check_writeable_install_log_directory(_args, **_kwargs):
+    """Does the halodeck config file exist"""
+    return _test_writeable_directory('PC_LOG_DIR')
 
 
 def color(msg, color='default', bold=False):
@@ -119,12 +143,17 @@ def color(msg, color='default', bold=False):
 
 def get_checks(system_type):
     """Collect the checks needed"""
-    checks = [check_os_type, check_sudo_available]
+    checks = [check_os_type, check_sudo_available, check_holodeck_config_exists]
     if 'vtrq' in system_type:
         checks.append(check_sudo_access)
         checks.append(check_nvme_disk)
+        checks.append(check_writeable_vtrq_backingstore)
 
-    checks.append(check_holodeck_config_exists)
+    if 'vda' in system_type:
+        checks.append(check_writeable_vda_backingstore)
+
+    checks.append(check_writeable_install_directory)
+    checks.append(check_writeable_install_log_directory)
     return checks
 
 
@@ -172,7 +201,6 @@ def main(args):
 
 
 if __name__ == '__main__':
-
     _def_conf = os.path.join(os.environ.get('HOME'), "holodeck.cfg")
     default_config = os.environ.get('HOLODECK_CONFIGURATION_FILE', _def_conf)
 
