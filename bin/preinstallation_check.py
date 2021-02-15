@@ -5,25 +5,40 @@
 import argparse
 import logging
 import os
+import re
 import sys
 import time
 import subprocess
-from configparser import ConfigParser, ExtendedInterpolation
 
 
-def read_config(config_file):
-    with open(config_file, 'r') as f:
-        config_string = '[DEFAULT]\n' + f.read()
-    config = ConfigParser(interpolation=ExtendedInterpolation())
-    config.read_string(config_string)
-    return dict(config['DEFAULT'])
+def read_config(config_file, separator=' '):
+    results = {}
+    with open(config_file) as file_obj:
+        data = file_obj.readlines()
+    for line in data:
+        line = line.strip()
+        line
+        if not len(line) or re.search(r'\s*#', line):
+            continue
+        line = re.sub(r'\s+', ' ', line)
+        _x = line.split()
+        if separator:
+            _x = line.split(separator)
+        if len(_x) != 2:
+            print("Skipping %r in %r" % (line, config_file))
+            continue
+        key, value = _x
+        if value.startswith('"') and value.endswith('"'):
+            value = value[1:-1]
+        elif value.startswith("'") and value.endswith("'"):
+            value = value[1:-1]
+        results[key] = value
+    return results
 
 
 def check_os_type():
     """Verify our version"""
-    os_data = read_config('/etc/os-release')
-    import pprint
-    pprint.pprint(os_data)
+    os_data = read_config('/etc/os-release', separator='=')
     if os_data.get('ID') == 'amzn':
         if os_data['VERSION'] != "2":
             return False, 'Amazon version %s unsupported' % os_data['VERSION']
@@ -45,6 +60,9 @@ def check_holodeck_config_exists():
     config = os.environ.get('HOLODECK_CONFIGURATION')
     if not os.path.exists(config):
         return False, "Unable to identify HALODECK_CONFIGURATION file"
+    read_config(os.environ.get('HOLODECK_CONFIGURATION'))
+    return True, "Holodeck configuration %r exists and can be read" % config
+
 
 def check_sudo_available():
     """Verify sudo availability"""
@@ -104,6 +122,7 @@ def get_checks(system_type):
         checks.append(check_sudo_access)
         checks.append(check_nvme_disk)
 
+    checks.append(check_holodeck_config_exists)
     return checks
 
 
