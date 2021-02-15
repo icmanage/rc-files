@@ -61,8 +61,8 @@ def check_os_type(_args, log=None, **_kwargs):
 def check_holodeck_config_exists(args, log=None, **_kwargs):
     """Does the halodeck config file exist"""
     if not os.path.exists(args.config):
-        return False, "HALODECK_CONFIGURATION file %r does not exist" % args.config
-    read_config(os.environ.get('HOLODECK_CONFIGURATION'), log=log)
+        return False, "HOLODECK_CONFIGURATION_FILE file %r does not exist" % args.config
+    read_config(os.environ.get('HOLODECK_CONFIGURATION_FILE'), log=log)
     return True, "Holodeck configuration %r exists and can be read" % args.config
 
 
@@ -139,7 +139,7 @@ def main(args):
     checks = get_checks(args.type)
     logging.info('Starting %d pre-checks on %s', len(checks), args.type)
 
-    os.environ['HOLODECK_CONFIGURATION'] = args.config
+    os.environ['HOLODECK_CONFIGURATION_FILE'] = args.config
 
     failing_checks = []
     for check in checks:
@@ -174,7 +174,7 @@ def main(args):
 if __name__ == '__main__':
 
     _def_conf = os.path.join(os.environ.get('HOME'), "holodeck.cfg")
-    default_config = os.environ.get('HOLODECK_CONFIGURATION', _def_conf)
+    default_config = os.environ.get('HOLODECK_CONFIGURATION_FILE', _def_conf)
 
     parser = argparse.ArgumentParser(description='Pre-check the system')
     parser.add_argument('-v', '--verbose', action='count', default=0, help='Verbosity')
