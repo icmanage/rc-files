@@ -11,7 +11,7 @@ import time
 import subprocess
 
 
-def read_config(config_file, separator=' '):
+def read_config(config_file, separator=' ', log=None):
     results = {}
     with open(config_file) as file_obj:
         data = file_obj.readlines()
@@ -25,7 +25,10 @@ def read_config(config_file, separator=' '):
         if separator:
             _x = line.split(separator)
         if len(_x) != 2:
-            print("Skipping %r in %r" % (line, config_file))
+            if log:
+                log.warning("Skipping %r in %r" % (line, config_file))
+            else:
+                print("Skipping %r in %r" % (line, config_file))
             continue
         key, value = _x
         if value.startswith('"') and value.endswith('"'):
@@ -36,9 +39,9 @@ def read_config(config_file, separator=' '):
     return results
 
 
-def check_os_type(_args):
+def check_os_type(_args, log=None, **_kwargs):
     """Verify our version"""
-    os_data = read_config('/etc/os-release', separator='=')
+    os_data = read_config('/etc/os-release', separator='=', log=log)
     if os_data.get('ID') == 'amzn':
         if os_data['VERSION'] != "2":
             return False, 'Amazon version %s unsupported' % os_data['VERSION']
@@ -55,15 +58,15 @@ def check_os_type(_args):
         return False, "Unable to identify ID and or VERSION from /etc/os-release"
 
 
-def check_holodeck_config_exists(args):
+def check_holodeck_config_exists(args, log=None, **_kwargs):
     """Does the halodeck config file exist"""
     if not os.path.exists(args.config):
         return False, "HALODECK_CONFIGURATION file %r does not exist" % args.config
-    read_config(os.environ.get('HOLODECK_CONFIGURATION'))
+    read_config(os.environ.get('HOLODECK_CONFIGURATION'), log=log)
     return True, "Holodeck configuration %r exists and can be read" % args.config
 
 
-def check_sudo_available(_args):
+def check_sudo_available(*_args, **_kwargs):
     """Verify sudo availability"""
     return_code = subprocess.call(['which', 'sudo'], stdout=subprocess.PIPE)
     if return_code == 0:
@@ -71,7 +74,7 @@ def check_sudo_available(_args):
     return False, "Failing sudo availability.  Install sudo."
 
 
-def check_sudo_access(_args):
+def check_sudo_access(*_args, **_kwargs):
     """Verify sudo access"""
     # On aws - sudo -nv returns 0 and has ALL and NOPASSWD in the response if you can
     command = ['sudo', '-nl']
@@ -85,7 +88,7 @@ def check_sudo_access(_args):
     return False, "Failing passwordless sudo access.  You need to ensure you have passwordless sudo"
 
 
-def check_nvme_disk(_args):
+def check_nvme_disk(*_args, **_kwargs):
     """Verify that we have an NVME disk"""
     command = ['lsblk', '-d', '-n', '-o', 'name']
     output = subprocess.check_output(command)
@@ -94,7 +97,7 @@ def check_nvme_disk(_args):
     return False, "NVME disk NOT available.  Wrong hardware we need an NVME disk."
 
 
-def package_checks(_args):
+def package_checks(*_args, **_kwargs):
     """Verify we have the right packages installed"""
     return_code = subprocess.call(['sudo', '-V'], stdout=subprocess.PIPE)
     if return_code == 0:
@@ -140,8 +143,9 @@ def main(args):
 
     failing_checks = []
     for check in checks:
+        kwargs = {'log': logging}
         try:
-            check_status, message = check(args)
+            check_status, message = check(args, **kwargs)
         except Exception as err:
             logging.error(color("Unable to run check %r - %r" % (str(check), err), 'red'))
             failing_checks.append(check)
