@@ -36,7 +36,7 @@ def read_config(config_file, separator=' '):
     return results
 
 
-def check_os_type():
+def check_os_type(_args):
     """Verify our version"""
     os_data = read_config('/etc/os-release', separator='=')
     if os_data.get('ID') == 'amzn':
@@ -55,16 +55,15 @@ def check_os_type():
         return False, "Unable to identify ID and or VERSION from /etc/os-release"
 
 
-def check_holodeck_config_exists():
+def check_holodeck_config_exists(args):
     """Does the halodeck config file exist"""
-    config = os.environ.get('HOLODECK_CONFIGURATION')
-    if not os.path.exists(config):
-        return False, "Unable to identify HALODECK_CONFIGURATION file"
+    if not os.path.exists(args.config):
+        return False, "HALODECK_CONFIGURATION file %r does not exist" % args.config
     read_config(os.environ.get('HOLODECK_CONFIGURATION'))
-    return True, "Holodeck configuration %r exists and can be read" % config
+    return True, "Holodeck configuration %r exists and can be read" % args.config
 
 
-def check_sudo_available():
+def check_sudo_available(_args):
     """Verify sudo availability"""
     return_code = subprocess.call(['which', 'sudo'], stdout=subprocess.PIPE)
     if return_code == 0:
@@ -72,7 +71,7 @@ def check_sudo_available():
     return False, "Failing sudo availability.  Install sudo."
 
 
-def check_sudo_access():
+def check_sudo_access(_args):
     """Verify sudo access"""
     # On aws - sudo -nv returns 0 and has ALL and NOPASSWD in the response if you can
     command = ['sudo', '-nl']
@@ -86,7 +85,7 @@ def check_sudo_access():
     return False, "Failing passwordless sudo access.  You need to ensure you have passwordless sudo"
 
 
-def check_nvme_disk():
+def check_nvme_disk(_args):
     """Verify that we have an NVME disk"""
     command = ['lsblk', '-d', '-n', '-o', 'name']
     output = subprocess.check_output(command)
@@ -95,7 +94,7 @@ def check_nvme_disk():
     return False, "NVME disk NOT available.  Wrong hardware we need an NVME disk."
 
 
-def package_checks():
+def package_checks(_args):
     """Verify we have the right packages installed"""
     return_code = subprocess.call(['sudo', '-V'], stdout=subprocess.PIPE)
     if return_code == 0:
@@ -142,7 +141,7 @@ def main(args):
     failing_checks = []
     for check in checks:
         try:
-            check_status, message = check()
+            check_status, message = check(args)
         except Exception as err:
             logging.error(color("Unable to run check %r - %r" % (str(check), err), 'red'))
             failing_checks.append(check)
@@ -169,6 +168,7 @@ def main(args):
 
 
 if __name__ == '__main__':
+
     _def_conf = os.path.join(os.environ.get('HOME'), "holodeck.cfg")
     default_config = os.environ.get('HOLODECK_CONFIGURATION', _def_conf)
 
