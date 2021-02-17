@@ -150,8 +150,15 @@ def check_installed_packages(_args, log=None, **_kwargs):
             if return_code == 1:
                 missing.append(package)
     if missing:
-        return False, "The following packages are missing: %s" % ", ".join(missing)
-    return True, "All required packages installed."
+        return False, "The following system packages are missing: %s" % ", ".join(missing)
+    return True, "All required system packages installed."
+
+
+def check_user_in_docker_group(_args, **_kwargs):
+    output = subprocess.check_output(['groups'])
+    if 'docker' not in output:
+        return False, "User is not part of the docker group."
+    return True, "User is part of the docker group."
 
 
 def color(msg, color='default', bold=False):
@@ -176,6 +183,7 @@ def get_checks(system_type):
         checks.append(check_installed_packages)
 
     if 'vda' in system_type:
+        checks.append(check_user_in_docker_group)
         checks.append(check_writeable_vda_backingstore)
 
     checks.append(check_writeable_install_directory)
