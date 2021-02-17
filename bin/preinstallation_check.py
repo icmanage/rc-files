@@ -154,6 +154,24 @@ def check_installed_packages(_args, log=None, **_kwargs):
     return True, "All required system packages installed."
 
 
+def check_uninstalled_packages(_args, log=None, **_kwargs):
+    os_data = read_config('/etc/os-release', separator='=', log=log, report=False)
+    extras = []
+    if os_data.get('ID') in ['amzn', 'rhel']:
+        packages = ['mlocate']
+        for package in packages:
+            command = ['yum', 'list', 'installed', package]
+            return_code = subprocess.call(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if return_code == 0:
+                extras.append(package)
+    else:
+        return False, "Unable to identify packages for %s" % os_data.get('ID')
+
+    if extras:
+        return False, "The following system packages are not recommended " \
+                      "and should be removed: %s" % ", ".join(extras)
+    return True, "Unnecessary packages are not installed"
+
 def check_user_in_docker_group(_args, **_kwargs):
     output = subprocess.check_output(['groups'])
     if 'docker' not in output:
@@ -181,6 +199,7 @@ def get_checks(system_type):
         checks.append(check_nvme_disk)
         checks.append(check_writeable_vtrq_backingstore)
         checks.append(check_installed_packages)
+        checks.append(check_uninstalled_packages)
 
     if 'vda' in system_type:
         checks.append(check_user_in_docker_group)
