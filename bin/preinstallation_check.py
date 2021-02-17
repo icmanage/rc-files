@@ -176,7 +176,7 @@ def check_user_in_docker_group(_args, **_kwargs):
     output = subprocess.check_output(['groups', os.environ['USER']])
     if 'docker' not in output:
         return False, "User is not part of the docker group."
-    return True, "User is part of the docker group."
+    return True, "User %s is part of the docker group." % os.environ['USER']
 
 
 def color(msg, color='default', bold=False):
@@ -216,7 +216,7 @@ def main(args):
     levels = [logging.WARNING, logging.INFO, logging.DEBUG]
     level = levels[min(len(levels) - 1, args.verbose)]
     logging.basicConfig(
-        level=level, format="%(asctime)s %(levelname)8s %(message)s", datefmt='%H:%M:%S')
+        level=level, format="%(levelname)-8s %(message)s")
 
     checks = get_checks(args.type)
     logging.info('Starting %d pre-checks on %s', len(checks), args.type)
