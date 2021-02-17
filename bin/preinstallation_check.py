@@ -48,7 +48,7 @@ def check_os_type(_args, log=None, **_kwargs):
             return False, 'Amazon version %s unsupported' % os_data['VERSION']
         return True, 'Amazon version %s supported' % os_data['VERSION']
     elif os_data.get('ID') == 'rhel':
-        if os_data['VERSION'] not in ["2", "6"]:
+        if os_data['VERSION'] not in ["6", "7"]:
             return False, 'Redhat version %s unsupported' % os_data['VERSION']
         return True, 'Redhat version %s supported' % os_data['VERSION']
     elif os_data.get('ID') == 'ubuntu':
@@ -104,9 +104,11 @@ def _test_writeable_directory(variable_name, ):
     return_code = subprocess.call(['touch', test_file], stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE)
     if return_code == 1:
-        return False, "Unable to write to %s as defined in config" % variable_name
+        return False, "Unable to write to %s (%s) as defined in " \
+                      "HOLODECK_CONFIGURATION_FILE" % (variable_name, config[variable_name])
     subprocess.call(['rm', test_file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    return True, "%s as defined in HOLODECK_CONFIGURATION_FILE is writeable" % variable_name
+    return True, "%s (%s) as defined in HOLODECK_CONFIGURATION_FILE is " \
+                 "writeable" % (variable_name, config[variable_name])
 
 
 def check_writeable_vtrq_backingstore(_args, **_kwargs):
@@ -129,6 +131,29 @@ def check_writeable_install_log_directory(_args, **_kwargs):
     return _test_writeable_directory('PC_LOG_DIR')
 
 
+def check_installed_packages(_args, log=None, **_kwargs):
+    os_data = read_config('/etc/os-release', separator='=', log=log, report=False)
+    missing = []
+    if os_data.get('ID') == 'amzn':
+        packages = ['amazon-linux-extras', 'yum-utils', 'device-mapper-persistent-data',
+                    'lvm2', 'm4', 'docker']
+        for package in packages:
+            command = ['yum', 'list', 'installed', package]
+            return_code = subprocess.call(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if return_code == 1:
+                missing.append(package)
+    elif os_data.get('ID') == 'rhel':
+        packages = ['docker']
+        for package in packages:
+            command = ['yum', 'list', 'installed', package]
+            return_code = subprocess.call(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if return_code == 1:
+                missing.append(package)
+    if missing:
+        return False, "The following packages are missing: %s" % ", ".join(missing)
+    return True, "All required packages installed."
+
+
 def color(msg, color='default', bold=False):
     """Color some text"""
     color_dict = {'default': 0, 'black': 30, 'red': 31, 'green': 32,
@@ -148,6 +173,7 @@ def get_checks(system_type):
         checks.append(check_sudo_access)
         checks.append(check_nvme_disk)
         checks.append(check_writeable_vtrq_backingstore)
+        checks.append(check_installed_packages)
 
     if 'vda' in system_type:
         checks.append(check_writeable_vda_backingstore)
