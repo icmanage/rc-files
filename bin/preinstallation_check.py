@@ -173,7 +173,7 @@ def check_uninstalled_packages(_args, log=None, **_kwargs):
     return True, "Unnecessary packages are not installed"
 
 def check_user_in_docker_group(_args, **_kwargs):
-    output = subprocess.check_output(['groups'])
+    output = subprocess.check_output(['groups', os.environ['USER']])
     print(output)
     if 'docker' not in output:
         return False, "User is not part of the docker group."
