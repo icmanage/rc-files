@@ -174,6 +174,7 @@ def check_uninstalled_packages(_args, log=None, **_kwargs):
 
 def check_user_in_docker_group(_args, **_kwargs):
     output = subprocess.check_output(['groups'])
+    print(output)
     if 'docker' not in output:
         return False, "User is not part of the docker group."
     return True, "User is part of the docker group."
@@ -197,9 +198,9 @@ def get_checks(system_type):
     if 'vtrq' in system_type:
         checks.append(check_sudo_access)
         checks.append(check_nvme_disk)
-        checks.append(check_writeable_vtrq_backingstore)
         checks.append(check_installed_packages)
         checks.append(check_uninstalled_packages)
+        checks.append(check_writeable_vtrq_backingstore)
 
     if 'vda' in system_type:
         checks.append(check_user_in_docker_group)
