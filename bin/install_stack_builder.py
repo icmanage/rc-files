@@ -13,6 +13,7 @@ curl -sSL https://github.com/icmanage/rc-files/raw/main/bin/install_stack_builde
 
 """
 import argparse
+import datetime
 import logging
 import os
 import subprocess
@@ -257,6 +258,9 @@ def main(args):
 
 
     if not have_python3:
+        start = datetime.datetime.now()
+        msg = "Installing python 3 - Patience this can take a bit starting %s" % start
+        logging.info(color(msg, 'cyan'))
         install_python3(log=logging)
 
 
