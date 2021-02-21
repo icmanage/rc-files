@@ -156,17 +156,18 @@ def install_python3(log, version='3.8.6'):
     cmds = [
         ['sudo', 'yum', 'groups', 'mark', 'install', 'Development Tools'],
         ['sudo', 'yum', '-y', 'groupinstall', 'Development Tools'],
-        ['sudo', 'yum', '-y', 'openssl-libs', 'openssl-devel', 'bzip2-devel', 'zlib', 'wget',
-         'zlib-devel', 'libffi-devel', 'dbus-glib-devel', 'readline-devel'],
-        ['sudo', 'wget', 'https://www.python.org/ftp/python/%s/Python-%s.tgz' % version],
-        ['sudo', 'tar', 'xzf', 'Python-${PYTHON_VERSION}.tgz' % version],
+        ['sudo', 'yum', '-y', 'install',  'openssl-libs', 'openssl-devel', 'bzip2-devel', 'zlib',
+         'wget', 'zlib-devel', 'libffi-devel', 'dbus-glib-devel', 'readline-devel'],
+        ['sudo', 'wget', 'https://www.python.org/ftp/python/%s/Python-%s.tgz' % (version, version)],
+        ['sudo', 'tar', 'xzf', 'Python-%s.tgz' % version],
 
     ]
     pre_install = True
     for cmd in cmds:
+        log.debug(" ".join(cmd))
         return_code = subprocess.call(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if return_code != 0:
-            log.error("Unable to run %r" % ' '.join(cmd))
+            log.error(color("Unable to run %r" % ' '.join(cmd), 'red'))
             pre_install = False
             break
 
@@ -182,9 +183,10 @@ def install_python3(log, version='3.8.6'):
     ]
     install = True
     for cmd in cmds:
+        log.debug(" ".join(cmd))
         return_code = subprocess.call(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if return_code != 0:
-            log.error("Unable to run %r" % ' '.join(cmd))
+            log.error(color("Unable to run %r" % ' '.join(cmd), 'red'))
             install = False
             break
     if not install:
@@ -209,9 +211,12 @@ def install_python3(log, version='3.8.6'):
 
     post_install = True
     for cmd in cmds:
-        return_code = subprocess.call(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        log.info(" ".join(cmd))
+        with open(os.devnull, 'wb') as devnull:
+            return_code = subprocess.call(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=devnull)
         if return_code != 0:
-            log.error("Unable to run %r" % ' '.join(cmd))
+            log.error(color("Unable to run %r" % ' '.join(cmd), 'red'))
             post_install = False
             break
     if not post_install:
