@@ -214,7 +214,7 @@ def install_python3(log, version='3.8.6'):
         log.info(" ".join(cmd))
         with open(os.devnull, 'wb') as devnull:
             return_code = subprocess.call(
-                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=devnull)
+                cmd, stdout=devnull, stderr=devnull, stdin=devnull, timeout=60*15, )
         if return_code != 0:
             log.error(color("Unable to run %r" % ' '.join(cmd), 'red'))
             post_install = False
