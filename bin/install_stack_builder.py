@@ -60,7 +60,24 @@ def main(args):
     level = levels[min(len(levels) - 1, args.verbose)]
     logging.basicConfig(level=level, format="%(levelname)-8s %(message)s")
 
-    logging.info('Starting stack builder install')
+    logging.info(color('Starting stack builder install', 'cyan'))
+
+    # These are min required type checks
+    pre_checks = [check_sudo_available, check_sudo_access]
+    failing_checks = []
+    for check in pre_checks:
+        kwargs = {'log': logging}
+        try:
+            check_status, message = check(args, **kwargs)
+        except Exception as err:
+            logging.error(color("Unable to run check %r - %r" % (str(check), err), 'red'))
+            failing_checks.append(check)
+            continue
+        if check_status:
+            logging.info(color(message, 'green'))
+        else:
+            logging.error(color(message, 'red'))
+            failing_checks.append(check)
 
 
 
