@@ -16,6 +16,7 @@ import argparse
 import datetime
 import logging
 import os
+import re
 import subprocess
 import sys
 import time
