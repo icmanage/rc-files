@@ -53,6 +53,14 @@ def check_sudo_access(*_args, **_kwargs):
     return False, "Failing passwordless sudo access.  You need to ensure you have passwordless sudo"
 
 
+def check_python3(*_args, **_kwargs):
+    """Verify sudo availability"""
+    return_code = subprocess.call(['which', 'python3'], stdout=subprocess.PIPE)
+    if return_code == 0:
+        return True, "Passing python 3 availability.  python3 is available"
+    return False, "Failing pythond availability.  Install python 3."
+
+
 def main(args):
     """This is the main script."""
     start = time.time()
@@ -78,6 +86,14 @@ def main(args):
         else:
             logging.error(color(message, 'red'))
             failing_checks.append(check)
+
+    if failing_checks:
+        return "Missing bare minimum requirements.  Please correct the above errors."
+
+    have_python3, _ = check_python3()
+    if not have_python3:
+        logging.warning("Missing Python3.  This will get installed")
+
 
 
 
