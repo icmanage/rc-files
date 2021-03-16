@@ -193,12 +193,12 @@ def check_uninstalled_packages(_args, log=None, **_kwargs):
     return True, "Unnecessary packages (%s) are not installed" % ", ".join(packages)
 
 def check_user_in_docker_group(_args, **_kwargs):
-
+    """Verify the user is part of the d"""
     user = os.environ.get('USER') or subprocess.check_output(['whoami'])
     output = subprocess.check_output(['groups', user])
     if 'docker' not in output:
-        return False, "User is not part of the docker group."
-    return True, "User %s is part of the docker group." % os.environ['USER']
+        return False, "User %s is not part of the docker group." % user
+    return True, "User %s is part of the docker group." % user
 
 
 def color(msg, color='default', bold=False):
