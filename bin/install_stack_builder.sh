@@ -4,8 +4,14 @@
 # curl -sSL --retry 5 https://github.com/icmanage/rc-files/raw/main/bin/install_stack_builder.sh | sh -s -- -vvv
 
 if ! [ -x "$(command -v sudo)" ]; then
-    echo 'Error: sudo is not installed.' >&2
-    exit 1
+    user=`whoami`
+    if [ ${user}=='root' ]; then
+        yum install -y sudo > /dev/null
+        echo 'root ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/91-root
+    else
+        echo 'Error: sudo is not installed.' >&2
+        exit 1
+    fi
 fi
 
 # This is how pulling from a private github repo (using git+ssh) is enabled.
