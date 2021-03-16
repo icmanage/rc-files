@@ -61,20 +61,27 @@ def check_os_type(_args, log=None, **_kwargs):
     else:
         return False, "Unsupported OS ID / VERSION %s %s" % (os_data['ID'], os_data['VERSION'])
 
+
 def check_which_available(*_args, **_kwargs):
     """Verify which is installed."""
     command = 'which', 'which'
-    return_code = subprocess.call(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if return_code == 0:
-        return True, "Passing which availability.  which is available"
+    try:
+        return_code = subprocess.call(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if return_code == 0:
+            return True, "Passing which availability.  which is available"
+    except OSError:
+        pass
     return False, "Failing which availability.  Install which."
 
 
 def check_sudo_available(*_args, **_kwargs):
     """Verify sudo availability"""
-    return_code = subprocess.call(['which', 'sudo'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if return_code == 0:
-        return True, "Passing sudo availability.  Sudo is available"
+    try:
+        return_code = subprocess.call(['which', 'sudo'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if return_code == 0:
+            return True, "Passing sudo availability.  Sudo is available"
+    except OSError:
+        pass
     return False, "Failing sudo availability.  Install sudo."
 
 
