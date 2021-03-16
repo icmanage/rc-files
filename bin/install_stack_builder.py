@@ -19,6 +19,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 import time
 
 
@@ -61,6 +62,46 @@ def read_config(config_file, separator=' ', log=None, report=True):
         results[key] = value
     return results
 
+def write_file(filename, content, as_user=None, as_group=None, mode='0644', encoding='utf-8'):
+    """Write a file"""
+    data = content
+    if encoding:
+        data = bytes(content, encoding=encoding)
+    with tempfile.NamedTemporaryFile(delete=False) as temp:
+        temp.write(data)
+
+    # Case 1 whoami=bob tries to write as_user=bob file
+    # Case 2 whoami=bob tries to write as_user=root file
+    # Case 3 whoami=bob tries to write as_user=larry file
+
+    # Case 3 whoami=root tries to write as_user=root file
+    # Case 4 whoami=root tries to write as_user=bob file
+
+    user = self.whoami
+    if as_user:
+        user = as_user if ':' not in as_user else as_user.split(':')[0]
+
+    # Own the temp file
+    if as_user and user != self.whoami:
+        self.run_command(['chown', as_user, temp.name], as_user='root')
+    if as_group:
+        self.run_command(['chgrp', as_group, temp.name], as_user='root')
+
+    # Copy it over as root to make sure we can write anywhere.
+    if as_user and user != self.whoami:
+        self.run_command(['cp', temp.name, filename], as_user='root')
+    else:
+        self.run_command(['cp', temp.name, filename])
+
+    # Own the new file
+    if as_user and user != self.whoami:
+        self.run_command(['chown', as_user, filename], as_user='root')
+
+    if isinstance(mode, int):
+        mode = '%s' % mode
+    # Perms and nuke the old file
+    self.run_command(['chmod', mode, filename], as_user=as_user)
+    self.run_command(['rm', '-f', temp.name], as_user=as_user)
 
 def check_os_type(_args, log=None, **_kwargs):
     """Verify our version"""
@@ -90,6 +131,11 @@ def check_which_available(*_args, **_kwargs):
             return True, "Passing which availability.  which is available"
     except OSError:
         pass
+    user = _kwargs.get('user')
+    if user == 'root':
+        subprocess.call(['yum', 'install', '-y', 'which'], stdout=subprocess.DEVNULL)
+        return check_sudo_access(*_args, **_kwargs)
+
     return False, "Failing which availability.  Install which."
 
 
@@ -101,6 +147,10 @@ def check_sudo_available(*_args, **_kwargs):
             return True, "Passing sudo availability.  Sudo is available"
     except OSError:
         pass
+    user = _kwargs.get('user')
+    if user == 'root':
+        subprocess.call(['yum', 'install', '-y', 'sudo'], stdout=subprocess.DEVNULL)
+        return check_sudo_access(*_args, **_kwargs)
     return False, "Failing sudo availability.  Install sudo."
 
 
@@ -115,9 +165,17 @@ def check_sudo_access(*_args, **_kwargs):
 
     if return_code == 1:
         return False, "Failing sudo access - You don't appear to have sudo access"
+
     output = subprocess.check_output(command)
+
     if 'ALL' in output and 'NOPASSWD: ALL' in output:
         return True, "Passing sudo access.  User has passwordless sudo access"
+    user = _kwargs.get('user')
+    if user == 'root':
+        with tempfile.NamedTemporaryFile(delete=False) as temp:
+            temp.write(bytes('%s ALL=(ALL) NOPASSWD:ALL\n', encoding='utf-8'))
+        subprocess.call(['cp', temp.name, '/etc/sudoers.d/91-%s' % user], stdout=subprocess.DEVNULL)
+        return check_sudo_access(*_args, **_kwargs)
     return False, "Failing passwordless sudo access.  You need to ensure you have passwordless sudo"
 
 
@@ -256,13 +314,14 @@ def main(args):
     level = levels[min(len(levels) - 1, args.verbose)]
     logging.basicConfig(level=level, format="%(levelname)-8s %(message)s")
 
-    logging.info(color('Starting stack builder install', 'cyan'))
+    user = os.environ.get('USER') or subprocess.check_output(['whoami']).strip()
+    logging.info(color('Starting stack builder install for %s' % user, 'cyan'))
 
     # These are min required type checks
     pre_checks = [check_os_type, check_which_available, check_sudo_available, check_sudo_access]
     failing_checks = []
     for check in pre_checks:
-        kwargs = {'log': logging}
+        kwargs = {'log': logging, 'user': user}
         try:
             check_status, message = check(args, **kwargs)
         except Exception as err:
