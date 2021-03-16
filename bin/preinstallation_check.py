@@ -36,6 +36,7 @@ def read_config(config_file, separator=' ', log=None, report=True):
         elif value.startswith("'") and value.endswith("'"):
             value = value[1:-1]
         results[key] = value
+    print(results)
     return results
 
 
@@ -46,7 +47,7 @@ def check_os_type(_args, log=None, **_kwargs):
         if os_data['VERSION'] != "2":
             return False, 'Amazon version %s unsupported' % os_data['VERSION']
         return True, 'Amazon version %s supported' % os_data['VERSION']
-    elif os_data.get('ID') == 'rhel':
+    elif os_data.get('ID') in ['rhel', 'centos']:
         if os_data['VERSION'] not in ["6", "7"]:
             return False, 'Redhat version %s unsupported' % os_data['VERSION']
         return True, 'Redhat version %s supported' % os_data['VERSION']
@@ -56,6 +57,8 @@ def check_os_type(_args, log=None, **_kwargs):
         return True, 'Ubuntu version %s supported' % os_data['VERSION']
     elif os_data.get('ID') is None:
         return False, "Unable to identify ID and or VERSION from /etc/os-release"
+    else:
+        return False, "Unsupported OS ID / VERSION %s %s" % (os_data['ID'], os_data['VERSION'])
 
 def check_which_available(*_args, **_kwargs):
     """Verify which is installed."""
@@ -68,7 +71,7 @@ def check_which_available(*_args, **_kwargs):
 
 def check_sudo_available(*_args, **_kwargs):
     """Verify sudo availability"""
-    return_code = subprocess.call(['which', 'sudo'], stdout=subprocess.PIPE)
+    return_code = subprocess.call(['which', 'sudo'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if return_code == 0:
         return True, "Passing sudo availability.  Sudo is available"
     return False, "Failing sudo availability.  Install sudo."
