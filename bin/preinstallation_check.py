@@ -113,7 +113,12 @@ def check_holodeck_config_exists(args, log=None, **_kwargs):
 
 
 def _test_writeable_directory(variable_name, ):
-    config = read_config(os.environ.get('HOLODECK_CONFIGURATION_FILE'), report=False)
+    try:
+        config = read_config(os.environ.get('HOLODECK_CONFIGURATION_FILE'), report=False)
+    except IOError:
+        return False, "HOLODECK_CONFIGURATION_FILE does not exist " \
+                      "unable to fulfill %s" % variable_name
+
     test_file = os.path.join(config[variable_name], '.empty_file')
     return_code = subprocess.call(['touch', test_file], stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE)
@@ -171,6 +176,7 @@ def check_installed_packages(_args, log=None, **_kwargs):
 def check_uninstalled_packages(_args, log=None, **_kwargs):
     os_data = read_config('/etc/os-release', separator='=', log=log, report=False)
     extras = []
+    packages = []
     if os_data.get('ID') in ['amzn', 'rhel', 'centos']:
         packages = ['mlocate']
         for package in packages:
@@ -184,7 +190,7 @@ def check_uninstalled_packages(_args, log=None, **_kwargs):
     if extras:
         return False, "The following system packages are not recommended " \
                       "and should be removed: %s" % ", ".join(extras)
-    return True, "Unnecessary packages are not installed"
+    return True, "Unnecessary packages (%s) are not installed" % ", ".join(packages)
 
 def check_user_in_docker_group(_args, **_kwargs):
     output = subprocess.check_output(['groups', os.environ['USER']])
