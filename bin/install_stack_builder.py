@@ -62,7 +62,7 @@ def read_config(config_file, separator=' ', log=None, report=True):
         results[key] = value
     return results
 
-def check_os_type(_args, log=None, **_kwargs):
+def check_os_type(*_args, log=None, **_kwargs):
     """Verify our version"""
     os_data = read_config('/etc/os-release', separator='=', log=log)
     if os_data.get('ID') == 'amzn':
@@ -94,7 +94,7 @@ def check_which_available(*_args, log=None, user=None, **_kwargs):
         if log:
             log.warning(color("Installing which", 'yellow'))
         subprocess.call(['yum', 'install', '-y', 'which'])
-        return check_which_available(*_args, **_kwargs)
+        return check_which_available(*_args, user=user, log=log,  **_kwargs)
 
     return False, "Failing which availability.  Install which."
 
