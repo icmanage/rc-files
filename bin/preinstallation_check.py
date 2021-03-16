@@ -85,7 +85,8 @@ def check_sudo_access(*_args, **_kwargs):
     try:
         return_code = subprocess.call(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except OSError:
-        return None,
+        return None, None
+
     if return_code == 1:
         return False, "Failing sudo access - You don't appear to have sudo access"
     output = subprocess.check_output(command)
