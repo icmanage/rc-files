@@ -36,7 +36,6 @@ def read_config(config_file, separator=' ', log=None, report=True):
         elif value.startswith("'") and value.endswith("'"):
             value = value[1:-1]
         results[key] = value
-    print(results)
     return results
 
 
@@ -48,9 +47,11 @@ def check_os_type(_args, log=None, **_kwargs):
             return False, 'Amazon version %s unsupported' % os_data['VERSION']
         return True, 'Amazon version %s supported' % os_data['VERSION']
     elif os_data.get('ID') in ['rhel', 'centos']:
-        if os_data['VERSION'] not in ["6", "7"]:
-            return False, 'Redhat version %s unsupported' % os_data['VERSION']
-        return True, 'Redhat version %s supported' % os_data['VERSION']
+        if os_data['VERSION'] not in ["6", "7"] or os_data['VERSION_ID'] not in ["6", "7"]:
+            return False, '%s version %s unsupported' % (
+                os_data['ID'].capitalize(), os_data['VERSION'])
+        return True, '%s version %s supported' % (
+                os_data['ID'].capitalize(), os_data['VERSION'])
     elif os_data.get('ID') == 'ubuntu':
         if os_data['VERSION'] != "18":
             return False, 'Ubuntu version %s unsupported' % os_data['VERSION']
@@ -81,10 +82,12 @@ def check_sudo_access(*_args, **_kwargs):
     """Verify sudo access"""
     # On aws - sudo -nv returns 0 and has ALL and NOPASSWD in the response if you can
     command = ['sudo', '-nl']
-    return_code = subprocess.call(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        return_code = subprocess.call(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except OSError:
+        return None,
     if return_code == 1:
         return False, "Failing sudo access - You don't appear to have sudo access"
-
     output = subprocess.check_output(command)
     if 'ALL' in output and 'NOPASSWD: ALL' in output:
         return True, "Passing sudo access.  User has passwordless sudo access"
@@ -243,11 +246,12 @@ def main(args):
             logging.error(color("Unable to run check %r - %r" % (str(check), err), 'red'))
             failing_checks.append(check)
             continue
-        if check_status:
-            logging.info(color(message, 'green'))
-        else:
-            logging.error(color(message, 'red'))
-            failing_checks.append(check)
+        if check_status in [True, False]:
+            if check_status:
+                logging.info(color(message, 'green'))
+            else:
+                logging.error(color(message, 'red'))
+                failing_checks.append(check)
 
     data = dict(elapsed_time=round((time.time() - start), 2), total_checks=len(checks),
                 failing_checks=len(failing_checks), type=args.type)
