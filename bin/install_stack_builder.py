@@ -108,10 +108,13 @@ def check_sudo_access(*_args, **_kwargs):
     """Verify sudo access"""
     # On aws - sudo -nv returns 0 and has ALL and NOPASSWD in the response if you can
     command = ['sudo', '-nl']
-    return_code = subprocess.call(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        return_code = subprocess.call(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except OSError:
+        return None, None
+
     if return_code == 1:
         return False, "Failing sudo access - You don't appear to have sudo access"
-
     output = subprocess.check_output(command)
     if 'ALL' in output and 'NOPASSWD: ALL' in output:
         return True, "Passing sudo access.  User has passwordless sudo access"
@@ -256,7 +259,7 @@ def main(args):
     logging.info(color('Starting stack builder install', 'cyan'))
 
     # These are min required type checks
-    pre_checks = [check_os_type, check_sudo_available, check_sudo_access]
+    pre_checks = [check_os_type, check_which_available, check_sudo_available, check_sudo_access]
     failing_checks = []
     for check in pre_checks:
         kwargs = {'log': logging}
@@ -266,11 +269,12 @@ def main(args):
             logging.error(color("Unable to run check %r - %r" % (str(check), err), 'red'))
             failing_checks.append(check)
             continue
-        if check_status:
-            logging.info(color(message, 'green'))
-        else:
-            logging.error(color(message, 'red'))
-            failing_checks.append(check)
+        if check_status in [True, False]:
+            if check_status:
+                logging.info(color(message, 'green'))
+            else:
+                logging.error(color(message, 'red'))
+                failing_checks.append(check)
 
     if failing_checks:
         return "Missing bare minimum requirements.  Please correct the above errors."
