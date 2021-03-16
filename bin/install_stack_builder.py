@@ -81,7 +81,7 @@ def check_os_type(_args, log=None, **_kwargs):
         return False, "Unsupported OS ID / VERSION %s %s" % (os_data['ID'], os_data['VERSION'])
 
 
-def check_which_available(*_args, **_kwargs):
+def check_which_available(*_args, log=None, user=None, **_kwargs):
     """Verify which is installed."""
     command = 'which', 'which'
     try:
@@ -90,15 +90,16 @@ def check_which_available(*_args, **_kwargs):
             return True, "Passing which availability.  which is available"
     except OSError:
         pass
-    user = _kwargs.get('user')
     if user == 'root':
+        if log:
+            log.warning(color("Installing which", 'yellow'))
         subprocess.call(['yum', 'install', '-y', 'which'])
-        return check_sudo_access(*_args, **_kwargs)
+        return check_which_available(*_args, **_kwargs)
 
     return False, "Failing which availability.  Install which."
 
 
-def check_sudo_available(*_args, **_kwargs):
+def check_sudo_available(*_args, user=None, log=None, **_kwargs):
     """Verify sudo availability"""
     try:
         return_code = subprocess.call(['which', 'sudo'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -106,10 +107,11 @@ def check_sudo_available(*_args, **_kwargs):
             return True, "Passing sudo availability.  Sudo is available"
     except OSError:
         pass
-    user = _kwargs.get('user')
     if user == 'root':
+        if log:
+            log.warning(color("Installing which", 'yellow'))
         subprocess.call(['yum', 'install', '-y', 'sudo'])
-        return check_sudo_access(*_args, **_kwargs)
+        return check_sudo_available(*_args, **_kwargs)
     return False, "Failing sudo availability.  Install sudo."
 
 
@@ -134,7 +136,7 @@ def check_sudo_access(*_args, **_kwargs):
     user = _kwargs.get('user')
     if user == 'root':
         with tempfile.NamedTemporaryFile(delete=False) as temp:
-            temp.write(bytes('%s ALL=(ALL) NOPASSWD:ALL\n', encoding='utf-8'))
+            temp.write('%s ALL=(ALL) NOPASSWD:ALL\n' % user)
         subprocess.call(['cp', temp.name, '/etc/sudoers.d/91-%s' % user])
         return check_sudo_access(*_args, **_kwargs)
     return False, "Failing passwordless sudo access.  You need to ensure you have passwordless sudo"
