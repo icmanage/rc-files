@@ -108,7 +108,7 @@ if ! [ $(id -u) = 0 ]; then
       sudo chown root:root /root/.ssh/known_hosts && \
       sudo chmod 640 /root/.ssh/known_hosts
     sudo -HE pip3 uninstall -qq infrastructure -y
-    sudo -HE pip3 install -qq --upgrade --no-cache-dir git+ssh://git@github.com/pivotal-energy-solutions/tensor-infrastructure.git || (c=$?; echo "Issue updating infrastructure"; (exit $c))
+    sudo -HE pip3 install -qq --upgrade --no-cache-dir git+ssh://git@github.com/icmanage/peercache-infrastructure.git || (c=$?; echo "Issue updating infrastructure"; (exit $c))
     if ! [ -f /root/.env ]; then
       sudo touch /root/.env
     fi
@@ -121,7 +121,7 @@ else
     fi
 fi
 
-echo "Starting Create or Update AMI"
+echo "All done"
 
 #create_or_update_ami.py "$@"
 
