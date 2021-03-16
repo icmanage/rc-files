@@ -6,6 +6,7 @@
 if ! [ -x "$(command -v sudo)" ]; then
     user=`whoami`
     if [ ${user}=='root' ]; then
+        echo "Installing sudo"
         yum install -y sudo > /dev/null
         echo 'root ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/91-root
     else
@@ -17,21 +18,44 @@ fi
 # This is how pulling from a private github repo (using git+ssh) is enabled.
 _MISSING_AUTH_SOCK=0
 if [ -z "${SSH_AUTH_SOCK}" ] ; then
-  echo ""
-  echo "Error:  No SSH_AUTH_SOCK Found!!"
   _MISSING_AUTH_SOCK=1
 fi
 
-if [ $_MISSING_AUTH_SOCK = 1 ]; then
+_MISSING_SSH_PRIVATE_KEY=0
+if [ -z "${SSH_PRIVATE_KEY}" ] ; then
+  _MISSING_SSH_PRIVATE_KEY=1
+fi
+
+if [ $_MISSING_SSH_PRIVATE_KEY = 1 ]; then
+  if [ -e "${HOME}/.ssh/id_rsa" ]; then
+    echo "Using default ~/.ssh/id_rsa key"
+    _MISSING_SSH_PRIVATE_KEY=0
+  fi
+else
+  mkdir -p ${HOME}/.ssh
+  echo $SSH_PRIVATE_KEY > ${HOME}/.ssh/id_rsa
+fi
+
+if [ $_MISSING_AUTH_SOCK = 1 || $_MISSING_SSH_PRIVATE_KEY = 1 ]; then
+  echo "We need a way to connect to github to pull the peercache-infrastructure repository"
+  echo "We do this in one of two ways.  Either through the SSH_AUTH_SOCK or passing your "
+  echo "SSH Private Key to this via variable SSH_PRIVATE_KEY"
   echo ""
-  echo -n "You must ensure that 'ForwardAgent'"
-  echo " is set in your ~/.ssh/config.  To do that create or add to your .ssh/config the following:"
+  echo "If you came to this host via ssh you must ensure that you have 'ForwardAgent'"
+  echo "is set in your ~/.ssh/config.  To do that create or add to your .ssh/config the following:"
   echo ""
   echo "Host *"
   echo "  ForwardAgent yes";
   echo ""
+  echo "Otherwise you need to pass the environment variable SSH_PRIVATE_KEY which should contain"
+  echo "your SSH private key (That gets you into github).  Something like this should work for"
+  echo "docker:"
+  echo " "
+  echo "  docker run -e=SSH_PRIVATE_KEY=\"\$(cat ~/.ssh/id_rsa)\" --rm -it centos bash"
+  echo ""
   exit 255
 fi
+
 
 PYTHON_VERSION=3.8.6
 PYTHON_BASE_VERSION=`echo ${PYTHON_VERSION} | cut -d "." -f 1-2`
