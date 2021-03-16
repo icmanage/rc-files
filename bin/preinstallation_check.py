@@ -17,7 +17,6 @@ def read_config(config_file, separator=' ', log=None, report=True):
         data = file_obj.readlines()
     for line in data:
         line = line.strip()
-        line
         if not len(line) or re.search(r'\s*#', line):
             continue
         line = re.sub(r'\s+', ' ', line)
@@ -57,6 +56,14 @@ def check_os_type(_args, log=None, **_kwargs):
         return True, 'Ubuntu version %s supported' % os_data['VERSION']
     elif os_data.get('ID') is None:
         return False, "Unable to identify ID and or VERSION from /etc/os-release"
+
+def check_which_available(*_args, **_kwargs):
+    """Verify which is installed."""
+    command = 'which', 'which'
+    return_code = subprocess.call(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if return_code == 0:
+        return True, "Passing which availability.  which is available"
+    return False, "Failing which availability.  Install which."
 
 
 def check_sudo_available(*_args, **_kwargs):
@@ -193,7 +200,8 @@ def color(msg, color='default', bold=False):
 
 def get_checks(system_type):
     """Collect the checks needed"""
-    checks = [check_os_type, check_sudo_available, check_holodeck_config_exists]
+    checks = [check_os_type, check_which_available,
+              check_sudo_available, check_holodeck_config_exists]
     if 'vtrq' in system_type:
         checks.append(check_sudo_access)
         checks.append(check_nvme_disk)
