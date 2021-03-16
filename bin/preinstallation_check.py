@@ -195,7 +195,7 @@ def check_uninstalled_packages(_args, log=None, **_kwargs):
 
 def check_user_in_docker_group(_args, **_kwargs):
     """Verify the user is part of the d"""
-    user = os.environ.get('USER') or subprocess.check_output(['whoami'])
+    user = os.environ.get('USER') or subprocess.check_output(['whoami']).strip()
     output = subprocess.check_output(['groups', user])
     if 'docker' not in output:
         return False, "User %s is not part of the docker group." % user
