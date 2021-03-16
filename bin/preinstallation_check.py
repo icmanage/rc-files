@@ -47,7 +47,7 @@ def check_os_type(_args, log=None, **_kwargs):
             return False, 'Amazon version %s unsupported' % os_data['VERSION']
         return True, 'Amazon version %s supported' % os_data['VERSION']
     elif os_data.get('ID') in ['rhel', 'centos']:
-        if os_data['VERSION'] not in ["6", "7"] or os_data['VERSION_ID'] not in ["6", "7"]:
+        if os_data['VERSION'] not in ["6", "7"] and os_data.get('VERSION_ID') not in ["6", "7"]:
             return False, '%s version %s unsupported' % (
                 os_data['ID'].capitalize(), os_data['VERSION'])
         return True, '%s version %s supported' % (
@@ -155,7 +155,7 @@ def check_installed_packages(_args, log=None, **_kwargs):
             return_code = subprocess.call(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if return_code == 1:
                 missing.append(package)
-    elif os_data.get('ID') == 'rhel':
+    elif os_data.get('ID') in ['rhel', 'centos']:
         packages = ['docker']
         for package in packages:
             command = ['yum', 'list', 'installed', package]
@@ -170,7 +170,7 @@ def check_installed_packages(_args, log=None, **_kwargs):
 def check_uninstalled_packages(_args, log=None, **_kwargs):
     os_data = read_config('/etc/os-release', separator='=', log=log, report=False)
     extras = []
-    if os_data.get('ID') in ['amzn', 'rhel']:
+    if os_data.get('ID') in ['amzn', 'rhel', 'centos']:
         packages = ['mlocate']
         for package in packages:
             command = ['yum', 'list', 'installed', package]
