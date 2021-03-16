@@ -129,11 +129,13 @@ def check_sudo_access(*_args, **_kwargs):
 
     if 'ALL' in output and 'NOPASSWD: ALL' in output:
         return True, "Passing sudo access.  User has passwordless sudo access"
+
+    # Healing
     user = _kwargs.get('user')
     if user == 'root':
         with tempfile.NamedTemporaryFile(delete=False) as temp:
             temp.write(bytes('%s ALL=(ALL) NOPASSWD:ALL\n', encoding='utf-8'))
-        subprocess.call(['cp', temp.name, '/etc/sudoers.d/91-%s' % user], stdout=subprocess.DEVNULL)
+        subprocess.call(['cp', temp.name, '/etc/sudoers.d/91-%s' % user])
         return check_sudo_access(*_args, **_kwargs)
     return False, "Failing passwordless sudo access.  You need to ensure you have passwordless sudo"
 
