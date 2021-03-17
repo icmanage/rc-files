@@ -78,7 +78,7 @@ if ! [ -x "$(command -v python${PYTHON_BASE_VERSION})" ]; then
     # Build up Python $PYTHON_VERSION
     cd /usr/src || echo "Unable to cd to /usr/src"
     sudo wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz
-    sudo tar xzf Pythoen-${PYTHON_VERSION}.tgz
+    sudo tar xzf Python-${PYTHON_VERSION}.tgz
     cd /usr/src/Python-${PYTHON_VERSION}  || echo "Unable to cd to /usr/src/Python-${PYTHON_VERSION}"
     sudo ./configure --enable-optimizations
     sudo make < /dev/null
