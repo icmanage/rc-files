@@ -43,7 +43,7 @@ else
   fi
 fi
 
-if [ $_MISSING_AUTH_SOCK = 1 ] || [ $_MISSING_SSH_PRIVATE_KEY = 1 ]; then
+if [ $_MISSING_AUTH_SOCK = 1 ] && [ $_MISSING_SSH_PRIVATE_KEY = 1 ]; then
   echo ""
   echo "Missing SSH KEYS"
   echo ""
