@@ -26,6 +26,7 @@ if [ -z "${SSH_PRIVATE_KEY}" ] ; then
   _MISSING_SSH_PRIVATE_KEY=1
 fi
 
+_INSTALLED_SSH_KEY=0
 if [ $_MISSING_SSH_PRIVATE_KEY==1 ]; then
   if [ -e "${HOME}/.ssh/id_rsa" ]; then
     echo "Using default ~/.ssh/id_rsa key"
@@ -35,6 +36,7 @@ else
   mkdir -p ${HOME}/.ssh
   if [ ! -e "${HOME}/.ssh/id_rsa" ]; then
     echo $SSH_PRIVATE_KEY > ${HOME}/.ssh/id_rsa
+    _INSTALLED_SSH_KEY=1
   else
     echo "${HOME}/.ssh/id_rsa already exists! Not going to overwrite this!!"
     _MISSING_SSH_PRIVATE_KEY=1
@@ -42,9 +44,12 @@ else
 fi
 
 if [ $_MISSING_AUTH_SOCK = 1 ] || [ $_MISSING_SSH_PRIVATE_KEY = 1 ]; then
+  echo ""
+  echo "Missing SSH KEYS"
+  echo ""
   echo "We need a way to connect to github to pull the peercache-infrastructure repository"
-  echo "We do this in one of two ways.  Either through the SSH_AUTH_SOCK or passing your "
-  echo "SSH Private Key to this via variable SSH_PRIVATE_KEY"
+  echo "We do this in one of two ways.  Either through the SSH_AUTH_SOCK or by passing your "
+  echo "SSH Private Key to this host via variable SSH_PRIVATE_KEY"
   echo ""
   echo "If you came to this host via ssh you must ensure that you have 'ForwardAgent'"
   echo "is set in your ~/.ssh/config.  To do that create or add to your .ssh/config the following:"
@@ -68,8 +73,9 @@ PYTHON_BASE_VERSION=`echo ${PYTHON_VERSION} | cut -d "." -f 1-2`
 if ! [ -x "$(command -v python${PYTHON_BASE_VERSION})" ]; then
     echo "Python ${PYTHON_VERSION} is not installed."
     sudo yum groups mark install "Development Tools"
-    sudo yum -y groupinstall "Development Tools"
-    sudo yum -y install openssl-libs openssl-devel bzip2-devel zlib zlib-devel libffi-devel wget git nmap-ncat which dbus-glib-devel readline-devel
+    sudo yum -y groupinstall "Development Tools" > /dev/null 2>&1
+    sudo yum -y install openssl-libs openssl-devel bzip2-devel zlib zlib-devel \
+      libffi-devel wget git nmap-ncat which dbus-glib-devel readline-devel > /dev/null 2>&1
     # Build up Python $PYTHON_VERSION
     cd /usr/src || echo "Unable to cd to /usr/src"
     sudo wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz
@@ -124,6 +130,11 @@ fi
 echo "All done"
 
 #create_or_update_ami.py "$@"
+
+if [ $_INSTALLED_SSH_KEY = 1 ]; then
+  rm "${HOME}/.ssh/id_rsa"
+fi
+
 
 if [ $? -eq 0 ] ; then
     echo ""
