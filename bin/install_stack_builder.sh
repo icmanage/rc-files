@@ -19,19 +19,22 @@ fi
 _MISSING_AUTH_SOCK=0
 if [ -z "${SSH_AUTH_SOCK}" ] ; then
   _MISSING_AUTH_SOCK=1
+  echo "Missing AUTH SOCK"
 fi
 
 _MISSING_SSH_PRIVATE_KEY=0
 if [ -z "${SSH_PRIVATE_KEY}" ] ; then
   _MISSING_SSH_PRIVATE_KEY=1
+  echo "Missing PRIVATE KEY"
 fi
 
-if [ $_MISSING_SSH_PRIVATE_KEY = 1 ]; then
+if [ $_MISSING_SSH_PRIVATE_KEY==1 ]; then
   if [ -e "${HOME}/.ssh/id_rsa" ]; then
     echo "Using default ~/.ssh/id_rsa key"
     _MISSING_SSH_PRIVATE_KEY=0
   fi
 else
+  echo "HAVE PRIVATE KEY"
   mkdir -p ${HOME}/.ssh
   echo $SSH_PRIVATE_KEY > ${HOME}/.ssh/id_rsa
 fi
@@ -56,6 +59,7 @@ if [ $_MISSING_AUTH_SOCK = 1 || $_MISSING_SSH_PRIVATE_KEY = 1 ]; then
   exit 255
 fi
 
+exit
 
 PYTHON_VERSION=3.8.6
 PYTHON_BASE_VERSION=`echo ${PYTHON_VERSION} | cut -d "." -f 1-2`
@@ -109,16 +113,10 @@ if ! [ $(id -u) = 0 ]; then
       sudo chmod 640 /root/.ssh/known_hosts
     sudo -HE pip3 uninstall -qq infrastructure -y
     sudo -HE pip3 install -qq --upgrade --no-cache-dir git+ssh://git@github.com/icmanage/peercache-infrastructure.git || (c=$?; echo "Issue updating infrastructure"; (exit $c))
-    if ! [ -f /root/.env ]; then
-      sudo touch /root/.env
-    fi
 else
     ssh-keygen -F github.com > /dev/null 2>&1 || ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
     pip3 uninstall -qq infrastructure -y
     pip3 install -qq --upgrade --no-cache-dir git+ssh://git@github.com/icmanage/peercache-infrastructure.git || (c=$?; echo "Issue updating infrastructure"; (exit $c))
-    if ! [ -f ~/.env ]; then
-      touch ~/.env
-    fi
 fi
 
 echo "All done"
