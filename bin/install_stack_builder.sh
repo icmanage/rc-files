@@ -7,7 +7,7 @@ if ! [ -x "$(command -v sudo)" ]; then
     user=`whoami`
     if [ ${user}=='root' ]; then
         echo "Installing sudo"
-        yum install -y sudo > /dev/null
+        yum install -y sudo > /dev/null 2>&1
         echo 'root ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/91-root
     else
         echo 'Error: sudo is not installed.' >&2
