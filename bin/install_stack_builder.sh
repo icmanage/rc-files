@@ -66,7 +66,6 @@ if [ $_MISSING_AUTH_SOCK = 1 ] && [ $_MISSING_SSH_PRIVATE_KEY = 1 ]; then
   exit 255
 fi
 
-exit
 
 PYTHON_VERSION=3.8.6
 PYTHON_BASE_VERSION=`echo ${PYTHON_VERSION} | cut -d "." -f 1-2`
