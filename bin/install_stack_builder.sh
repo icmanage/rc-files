@@ -19,13 +19,11 @@ fi
 _MISSING_AUTH_SOCK=0
 if [ -z "${SSH_AUTH_SOCK}" ] ; then
   _MISSING_AUTH_SOCK=1
-  echo "Missing AUTH SOCK"
 fi
 
 _MISSING_SSH_PRIVATE_KEY=0
 if [ -z "${SSH_PRIVATE_KEY}" ] ; then
   _MISSING_SSH_PRIVATE_KEY=1
-  echo "Missing PRIVATE KEY"
 fi
 
 if [ $_MISSING_SSH_PRIVATE_KEY==1 ]; then
@@ -34,12 +32,16 @@ if [ $_MISSING_SSH_PRIVATE_KEY==1 ]; then
     _MISSING_SSH_PRIVATE_KEY=0
   fi
 else
-  echo "HAVE PRIVATE KEY"
   mkdir -p ${HOME}/.ssh
-  echo $SSH_PRIVATE_KEY > ${HOME}/.ssh/id_rsa
+  if [ ! -e "${HOME}/.ssh/id_rsa" ]; then
+    echo $SSH_PRIVATE_KEY > ${HOME}/.ssh/id_rsa
+  else
+    echo "${HOME}/.ssh/id_rsa already exists! Not going to overwrite this!!"
+    _MISSING_SSH_PRIVATE_KEY=1
+  fi
 fi
 
-if [ $_MISSING_AUTH_SOCK = 1 || $_MISSING_SSH_PRIVATE_KEY = 1 ]; then
+if [ $_MISSING_AUTH_SOCK = 1 ] || [ $_MISSING_SSH_PRIVATE_KEY = 1 ]; then
   echo "We need a way to connect to github to pull the peercache-infrastructure repository"
   echo "We do this in one of two ways.  Either through the SSH_AUTH_SOCK or passing your "
   echo "SSH Private Key to this via variable SSH_PRIVATE_KEY"
@@ -71,7 +73,7 @@ if ! [ -x "$(command -v python${PYTHON_BASE_VERSION})" ]; then
     # Build up Python $PYTHON_VERSION
     cd /usr/src || echo "Unable to cd to /usr/src"
     sudo wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz
-    sudo tar xzf Python-${PYTHON_VERSION}.tgz
+    sudo tar xzf Pythoen-${PYTHON_VERSION}.tgz
     cd /usr/src/Python-${PYTHON_VERSION}  || echo "Unable to cd to /usr/src/Python-${PYTHON_VERSION}"
     sudo ./configure --enable-optimizations
     sudo make < /dev/null
