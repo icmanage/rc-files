@@ -5,7 +5,7 @@
 
 if ! [ -x "$(command -v sudo)" ]; then
     user=`whoami`
-    if [ ${user}=='root' ]; then
+    if [ "${user}" == "root" ]; then
         echo "Installing sudo"
         yum install -y sudo > /dev/null 2>&1
         echo 'root ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/91-root
@@ -66,6 +66,7 @@ if [ $_MISSING_AUTH_SOCK = 1 ] && [ $_MISSING_SSH_PRIVATE_KEY = 1 ]; then
   exit 255
 fi
 
+. /etc/os-release
 
 PYTHON_VERSION=3.8.6
 PYTHON_BASE_VERSION=`echo ${PYTHON_VERSION} | cut -d "." -f 1-2`
@@ -79,10 +80,16 @@ if ! [ -x "$(command -v python${PYTHON_BASE_VERSION})" ]; then
     cd /usr/src || echo "Unable to cd to /usr/src"
     sudo wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz
     sudo tar xzf Python-${PYTHON_VERSION}.tgz
-    cd /usr/src/Python-${PYTHON_VERSION}  || echo "Unable to cd to /usr/src/Python-${PYTHON_VERSION}"
-    sudo ./configure --enable-optimizations
-    sudo make < /dev/null
-    sudo make install < /dev/null
+    cd /usr/src/Python-${PYTHON_VERSION}  || echo "Unable to cd to /usr/src/Python-${PYTHON_VERSION}"; exit 255
+    OPTS="--enable-optimizations"
+    if [ ${ID} == 'centos' ] || [ ${ID} == 'amzn' ] || [ ${ID} == 'rhel' ]; then
+        if [ ${VERSION_ID} == "6" ] || [ ${VERSION_ID} == "7" ]; then
+            OPTS=""
+        fi
+    fi
+    sudo ./configure ${OPTS} > /dev/null 2>&1 || echo "Unable to configure"; exit 255
+    sudo make < /dev/null > /dev/null 2>&1 || echo "Unable to make"; exit 255
+    sudo make install < /dev/null  || echo "Unable to make install"; exit 255
     cd /usr/src || echo "Unable to cd to /usr/src"
     sudo rm -rf /usr/src/Python-${PYTHON_VERSION}
     sudo rm -f /usr/src/Python-${PYTHON_VERSION}.tgz
@@ -143,3 +150,4 @@ if [ $? -eq 0 ] ; then
     echo ""
 else
   echo "This FAILED!! -- NOT GOOD!"
+fi
