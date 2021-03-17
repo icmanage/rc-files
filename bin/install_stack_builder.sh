@@ -87,8 +87,8 @@ if ! [ -x "$(command -v python${PYTHON_BASE_VERSION})" ]; then
             OPTS=""
         fi
     fi
-    sudo ./configure ${OPTS} > /dev/null 2>&1 || echo "Unable to configure"; exit 255
-    sudo make < /dev/null > /dev/null 2>&1 || echo "Unable to make"; exit 255
+    sudo ./configure ${OPTS} || echo "Unable to configure ${OPTS}"; exit 255
+    sudo make < /dev/null  || echo "Unable to make"; exit 255
     sudo make install < /dev/null  || echo "Unable to make install"; exit 255
     cd /usr/src || echo "Unable to cd to /usr/src"
     sudo rm -rf /usr/src/Python-${PYTHON_VERSION}
