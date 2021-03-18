@@ -15,57 +15,6 @@ if ! [ -x "$(command -v sudo)" ]; then
     fi
 fi
 
-# This is how pulling from a private github repo (using git+ssh) is enabled.
-_MISSING_AUTH_SOCK=0
-if [ -z "${SSH_AUTH_SOCK}" ] ; then
-  _MISSING_AUTH_SOCK=1
-fi
-
-_MISSING_SSH_PRIVATE_KEY=0
-if [ -z "${SSH_PRIVATE_KEY}" ] ; then
-  _MISSING_SSH_PRIVATE_KEY=1
-fi
-
-_INSTALLED_SSH_KEY=0
-if [ $_MISSING_SSH_PRIVATE_KEY==1 ]; then
-  if [ -e "${HOME}/.ssh/id_rsa" ]; then
-    echo "Using default ~/.ssh/id_rsa key"
-    _MISSING_SSH_PRIVATE_KEY=0
-  fi
-else
-  mkdir -p ${HOME}/.ssh
-  if [ ! -e "${HOME}/.ssh/id_rsa" ]; then
-    echo $SSH_PRIVATE_KEY > ${HOME}/.ssh/id_rsa
-    _INSTALLED_SSH_KEY=1
-  else
-    echo "${HOME}/.ssh/id_rsa already exists! Not going to overwrite this!!"
-    _MISSING_SSH_PRIVATE_KEY=1
-  fi
-fi
-
-if [ $_MISSING_AUTH_SOCK = 1 ] && [ $_MISSING_SSH_PRIVATE_KEY = 1 ]; then
-  echo ""
-  echo "Missing SSH KEYS"
-  echo ""
-  echo "We need a way to connect to github to pull the peercache-infrastructure repository"
-  echo "We do this in one of two ways.  Either through the SSH_AUTH_SOCK or by passing your "
-  echo "SSH Private Key to this host via variable SSH_PRIVATE_KEY"
-  echo ""
-  echo "If you came to this host via ssh you must ensure that you have 'ForwardAgent'"
-  echo "is set in your ~/.ssh/config.  To do that create or add to your .ssh/config the following:"
-  echo ""
-  echo "Host *"
-  echo "  ForwardAgent yes";
-  echo ""
-  echo "Otherwise you need to pass the environment variable SSH_PRIVATE_KEY which should contain"
-  echo "your SSH private key (That gets you into github).  Something like this should work for"
-  echo "docker:"
-  echo " "
-  echo "  docker run -e=SSH_PRIVATE_KEY=\"\$(cat ~/.ssh/id_rsa)\" --rm -it centos bash"
-  echo ""
-  exit 255
-fi
-
 . /etc/os-release
 
 PYTHON_VERSION=3.8.6
@@ -119,31 +68,19 @@ fi
 sudo -HE /usr/bin/pip${PYTHON_BASE_VERSION} install -q --upgrade pip  || echo "Unable to upgrade pip"
 sudo -HE /usr/bin/pip${PYTHON_BASE_VERSION} install -q --upgrade virtualenv || echo "Unable to upgrade virtualenv"
 sudo -HE /usr/bin/pip${PYTHON_BASE_VERSION} install -q --upgrade poetry || echo "Unable to upgrade poetry"
-sudo -HE /usr/bin/pip${PYTHON_BASE_VERSION} install -q --upgrade uwsgi || echo "Unable to upgrade uwsgi"
-sudo -HE /usr/bin/pip${PYTHON_BASE_VERSION} install -q --upgrade dbus-python || echo "Unable to upgrade dbus-python"
+
+sudo wget https://download.icmanage.com/peercache-infrastructure-current.tar.gz
 
 # Ensure we are good with github
-if ! [ "$(id -u)" = "0" ]; then
-    sudo -HE ssh-keygen -F github.com > /dev/null 2>&1 || \
-    ssh-keyscan github.com 2> /dev/null | sudo tee -a /root/.ssh/known_hosts > /dev/null && \
-    sudo chown root:root /root/.ssh/known_hosts && \
-    sudo chmod 640 /root/.ssh/known_hosts
-    sudo -HE pip3 uninstall -qq infrastructure -y
-    sudo -HE pip3 install -qq --upgrade --no-cache-dir git+ssh://git@github.com/icmanage/peercache-infrastructure.git || (c=$?; echo "Issue updating infrastructure"; (exit $c))
-else
-    ssh-keygen -F github.com > /dev/null 2>&1 || ssh-keyscan github.comssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
-    pip3 uninstall -qq infrastructure -y
-    pip3 install -qq --upgrade --no-cache-dir git+ssh://git@github.com/icmanage/peercache-infrastructure.git || (c=$?; echo "Issue updating infrastructure"; (exit $c))
-fi
-
-echo "All done"
-
-#create_or_update_ami.py "$@"
+sudo pip3 uninstall -qq infrastructure -y
+sudo pip3 install -qq --upgrade peercache-infrastructure-current.tar.gz
+sudo rm peercache-infrastructure-current.tar.gz
 
 if [ $_INSTALLED_SSH_KEY = 1 ]; then
   rm "${HOME}/.ssh/id_rsa"
 fi
 
+echo "All done"
 
 if [ $? -eq 0 ] ; then
     echo ""
